@@ -1,6 +1,6 @@
 //! # SteamID
 //! The steamid-ng crate provides an easy-to-use steamid type with functions to parse and render
-//! steam2 and steam3 ids.
+//! steam2 and steam3 IDs.
 //! 
 //! ## Examples
 //! 
