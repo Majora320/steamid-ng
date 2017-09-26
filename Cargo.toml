@@ -2,20 +2,18 @@
 name = "steamid-ng"
 version = "0.1.0"
 authors = ["Moses Miller <Majora320@gmail.com>"]
-
-[dependencies]
-enum_primitive = "0.1.1"
-lazy_static = "0.2.8"
-try_opt = "0.1.1"
-regex = "0.2.2"
-
-[package]
 description = "An easy-to-use steamid type with functions to parse and render steam2 and steam3 ids"
 repository = "https://github.com/Majora320/steamid-ng"
 readme = "README.md"
 keywords = ["steam", "steamid"]
 categories = ["parser-implementations", "games"]
 license = "MIT"
+
+[dependencies]
+enum_primitive = "0.1.1"
+lazy_static = "0.2.8"
+try_opt = "0.1.1"
+regex = "0.2.2"
 
 [badges]
 maintenance = { status = "passively-mantained" }
