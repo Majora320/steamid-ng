@@ -1,0 +1,10 @@
+[package]
+name = "steamid-ng"
+version = "0.1.0"
+authors = ["Moses Miller <Majora320@gmail.com>"]
+
+[dependencies]
+enum_primitive = "0.1.1"
+lazy_static = "0.2.8"
+try_opt = "0.1.1"
+regex = "0.2.2"
