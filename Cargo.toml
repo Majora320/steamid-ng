@@ -16,4 +16,5 @@ try_opt = "0.1.1"
 regex = "0.2.2"
 
 [badges]
-maintenance = { status = "passively-mantained" }
+maintenance = { status = "passively-maintained" }
+travis-ci = { repository = "Majora320/steamid-ng", branch = "master" }
