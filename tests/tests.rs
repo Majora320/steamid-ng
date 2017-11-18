@@ -57,7 +57,7 @@ fn test_from_u64() {
 #[test]
 fn test_steam2() {
     let mut s = SteamID::from(76561197969249708);
-    
+
     assert_eq!(s.steam2(), "STEAM_1:0:4491990");
     s.set_universe(Universe::Invalid);
     assert_eq!(s.steam2(), "STEAM_0:0:4491990");
@@ -87,20 +87,20 @@ fn test_from_steam2() {
     assert_eq!(s.account_type(), AccountType::Individual);
     assert_eq!(s.universe(), Universe::Public);
 
-    assert_eq!(SteamID::from_steam2("STEAM_bogus:bogus:bogus"), None);  
+    assert_eq!(SteamID::from_steam2("STEAM_bogus:bogus:bogus"), None);
 }
 
 #[test]
 fn test_steam3_symmetric() {
-    let steam3ids = vec!(		
-            "[U:1:123]",
-			"[U:1:123:2]",
-			"[G:1:626]",
-			"[A:2:165:1]",
-			"[T:1:123]",
-			"[c:1:123]",
-			"[L:1:123]",
-    );
+    let steam3ids = vec![
+        "[U:1:123]",
+        "[U:1:123:2]",
+        "[G:1:626]",
+        "[A:2:165:1]",
+        "[T:1:123]",
+        "[c:1:123]",
+        "[L:1:123]",
+    ];
 
     for id in steam3ids {
         assert_eq!(SteamID::from_steam3(id).unwrap().steam3(), id);

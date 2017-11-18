@@ -11,7 +11,7 @@ license = "MIT"
 
 [dependencies]
 enum_primitive = "0.1.1"
-lazy_static = "0.2.8"
+lazy_static = "0.2.10"
 try_opt = "0.1.1"
 regex = "0.2.2"
 

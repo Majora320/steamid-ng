@@ -1,10 +1,10 @@
 //! # SteamID
 //! The steamid-ng crate provides an easy-to-use SteamID type with functions to parse and render
 //! steam2 and steam3 IDs.
-//! 
+//!
 //! ## Examples
-//! 
-//! ``` 
+//!
+//! ```
 //! # use steamid_ng::{SteamID, Instance, AccountType, Universe};
 //! let x = SteamID::from(76561197960287930);
 //! let y = SteamID::from_steam3("[U:1:22202]").unwrap();
@@ -15,7 +15,7 @@
 //! assert_eq!(u64::from(z), 76561197960287930);
 //! assert_eq!(y.steam2(), "STEAM_1:0:11101");
 //! assert_eq!(x.steam3(), "[U:1:22202]");
-//! 
+//!
 //! assert_eq!(x.account_id(), 22202);
 //! assert_eq!(x.instance(), Instance::Desktop);
 //! assert_eq!(x.account_type(), AccountType::Individual);
