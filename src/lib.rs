@@ -1,6 +1,7 @@
 //! # SteamID
 //! The steamid-ng crate provides an easy-to-use SteamID type with functions to parse and render
-//! steam2 and steam3 IDs.
+//! steam2 and steam3 IDs. It also supports serializing and deserializing via
+//! [serde](https://serde.rs).
 //!
 //! ## Examples
 //!
@@ -26,22 +27,24 @@
 //!
 //! Keep in mind that the SteamID type does no validation.
 
-
 #[macro_use]
 extern crate enum_primitive;
 #[macro_use]
-extern crate lazy_static;
+extern crate serde_derive;
 #[macro_use]
-extern crate try_opt;
+extern crate lazy_static;
 extern crate regex;
+extern crate serde;
 
+use serde::de::{self, Visitor, Deserialize, Deserializer};
 use enum_primitive::FromPrimitive;
 use std::fmt::Formatter;
 use std::fmt::Display;
+use std::str::FromStr;
 use regex::Regex;
 use std::fmt;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
 
 impl SteamID {
@@ -88,9 +91,10 @@ impl SteamID {
         account_type: AccountType,
         universe: Universe,
     ) -> Self {
+        #[cfg_attr(rustfmt, rustfmt_skip)]
         Self::from(
-            account_id as u64 | ((instance as u64) << 32) | ((account_type as u64) << 52) |
-                ((universe as u64) << 56),
+            ((account_id   as u64) << 0)  | ((instance as u64) << 32) |
+            ((account_type as u64) << 52) | ((universe as u64) << 56),
         )
     }
 
@@ -104,19 +108,25 @@ impl SteamID {
         }
     }
 
-    pub fn from_steam2(steam2: &str) -> Option<Self> {
+    /// Little ergonomics thing, to avoid typing `SteamIDParseError::default()` everywhere
+    fn err() -> SteamIDParseError {
+        Default::default()
+    }
+
+    pub fn from_steam2(steam2: &str) -> Result<Self, SteamIDParseError> {
         lazy_static! {
             static ref STEAM2_REGEX: Regex =
                 Regex::new(r"^STEAM_([0-4]):([0-1]):([0-9]{1,10})$").unwrap();
         }
 
-        let groups = try_opt!(STEAM2_REGEX.captures(steam2));
+        let groups = STEAM2_REGEX.captures(steam2).ok_or(Self::err())?;
 
-        let mut universe: Universe = try_opt!(Universe::from_u64(
-            try_opt!(groups.get(1)).as_str().parse().unwrap(),
-        ));
-        let auth_server: u32 = try_opt!(groups.get(2)).as_str().parse().unwrap();
-        let account_id: u32 = try_opt!(groups.get(3)).as_str().parse().unwrap();
+        let mut universe: Universe = Universe::from_u64(
+            groups.get(1).ok_or(Self::err())?.as_str().parse().unwrap(),
+        ).ok_or(Self::err())?;
+        let auth_server: u32 = groups.get(2).ok_or(Self::err())?.as_str().parse().unwrap();
+        #[cfg_attr(rustfmt, rustfmt_skip)]
+        let account_id: u32 = groups.get(3).ok_or(Self::err())?.as_str().parse().unwrap();
         let account_id = account_id << 1 | auth_server;
 
         // Apparently, games before orange box used to display as 0 incorrectly
@@ -125,7 +135,7 @@ impl SteamID {
             universe = Universe::Public;
         }
 
-        Some(Self::new(
+        Ok(Self::new(
             account_id,
             Instance::Desktop,
             AccountType::Individual,
@@ -163,20 +173,26 @@ impl SteamID {
         }
     }
 
-    pub fn from_steam3(steam3: &str) -> Option<Self> {
+    pub fn from_steam3(steam3: &str) -> Result<Self, SteamIDParseError> {
         lazy_static! {
             static ref STEAM3_REGEX: Regex =
                 Regex::new(r"^\[([AGMPCgcLTIUai]):([0-4]):([0-9]{1,10})(:([0-9]+))?\]$").unwrap();
         }
 
-        let groups = try_opt!(STEAM3_REGEX.captures(steam3));
+        let groups = STEAM3_REGEX.captures(steam3).ok_or(Self::err())?;
 
-        let type_char = try_opt!(groups.get(1)).as_str().chars().next().unwrap();
+        let type_char = groups
+            .get(1)
+            .ok_or(Self::err())?
+            .as_str()
+            .chars()
+            .next()
+            .unwrap();
         let (account_type, flag) = char_to_account_type(type_char);
-        let universe = try_opt!(Universe::from_u64(
-            try_opt!(groups.get(2)).as_str().parse().unwrap(),
-        ));
-        let account_id = try_opt!(groups.get(3)).as_str().parse().unwrap();
+        let universe = Universe::from_u64(
+            groups.get(2).ok_or(Self::err())?.as_str().parse().unwrap(),
+        ).ok_or(Self::err())?;
+        let account_id = groups.get(3).ok_or(Self::err())?.as_str().parse().unwrap();
 
         let mut instance: Option<Instance> = groups.get(5).map(|g| {
             Instance::from_u64(g.as_str().parse().unwrap()).unwrap_or(Instance::Invalid)
@@ -192,14 +208,17 @@ impl SteamID {
             instance = Some(i);
         }
 
-        Some(Self::new(
+        Ok(Self::new(
             account_id,
-            try_opt!(instance),
+            instance.ok_or(Self::err())?,
             account_type,
             universe,
         ))
     }
 }
+
+#[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
+pub struct SteamIDParseError {}
 
 impl From<u64> for SteamID {
     fn from(s: u64) -> Self {
@@ -210,6 +229,62 @@ impl From<u64> for SteamID {
 impl From<SteamID> for u64 {
     fn from(s: SteamID) -> Self {
         s.0
+    }
+}
+
+impl From<SteamID> for String {
+    /// Returns a Steam3 representation of the SteamID
+    fn from(s: SteamID) -> Self {
+        return s.steam3();
+    }
+}
+
+// TODO: convert this to TryFrom once it's out of nightly
+// There will probably be a blanket impl that provides FromStr automatically
+impl FromStr for SteamID {
+    type Err = SteamIDParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.parse::<u64>() {
+            Ok(parsed) => Ok(parsed.into()),
+            Result::Err(_) => {
+                match Self::from_steam2(s) {
+                    Ok(parsed) => Ok(parsed),
+                    Result::Err(_) => Self::from_steam3(s),
+                }
+            }
+        }
+    }
+}
+
+pub struct SteamIDVisitor;
+impl<'de> Visitor<'de> for SteamIDVisitor {
+    type Value = SteamID;
+
+    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
+        formatter.write_str("a SteamID")
+    }
+
+    fn visit_str<E>(self, value: &str) -> Result<SteamID, E>
+    where
+        E: de::Error,
+    {
+        SteamID::from_str(value).map_err(|_| E::custom(format!("Invalid SteamID: {}", value)))
+    }
+
+    fn visit_u64<E>(self, value: u64) -> Result<SteamID, E>
+    where
+        E: de::Error,
+    {
+        Ok(value.into())
+    }
+}
+
+impl<'de> Deserialize<'de> for SteamID {
+    fn deserialize<D>(deserializer: D) -> Result<SteamID, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        deserializer.deserialize_str(SteamIDVisitor)
     }
 }
 

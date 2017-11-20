@@ -1,4 +1,5 @@
 extern crate steamid_ng;
+extern crate serde_json;
 use steamid_ng::*;
 
 #[test]
@@ -13,6 +14,10 @@ fn test_manual_construction() {
     assert_eq!(s.instance(), Instance::Console);
     assert_eq!(s.account_type(), AccountType::Chat);
     assert_eq!(s.universe(), Universe::Beta);
+    assert_eq!(
+        s,
+        SteamID::new(1234, Instance::Console, AccountType::Chat, Universe::Beta)
+    );
 
     s.set_account_id(4567);
     assert_eq!(s.account_id(), 4567);
@@ -87,7 +92,10 @@ fn test_from_steam2() {
     assert_eq!(s.account_type(), AccountType::Individual);
     assert_eq!(s.universe(), Universe::Public);
 
-    assert_eq!(SteamID::from_steam2("STEAM_bogus:bogus:bogus"), None);
+    assert_eq!(
+        SteamID::from_steam2("STEAM_bogus:bogus:bogus"),
+        Err(SteamIDParseError::default())
+    );
 }
 
 #[test]
@@ -133,5 +141,38 @@ fn test_from_steam3() {
     assert_eq!(s.account_type(), AccountType::Chat);
     assert_eq!(s.universe(), Universe::Internal);
 
-    assert_eq!(SteamID::from_steam3("[bogus:bogus:bogus]"), None);
+    assert_eq!(
+        SteamID::from_steam3("[bogus:bogus:bogus]"),
+        Err(SteamIDParseError::default())
+    );
+}
+
+#[test]
+fn test_serde() {
+    let s = SteamID::new(1234, Instance::Console, AccountType::Chat, Universe::Beta);
+    let serialized: String = serde_json::to_string(&s).unwrap();
+    let deserialized: SteamID = serde_json::from_str(&serialized).unwrap();
+    assert_eq!(s, deserialized);
+
+    let deserialized: SteamID = serde_json::from_str("\"STEAM_0:0:4491990\"").unwrap();
+    assert_eq!(
+        deserialized,
+        SteamID::new(
+            8983980,
+            Instance::Desktop,
+            AccountType::Individual,
+            Universe::Public,
+        ),
+    );
+
+    let deserialized: SteamID = serde_json::from_str("\"[U:1:123]\"").unwrap();
+    assert_eq!(
+        deserialized,
+        SteamID::new(
+            123,
+            Instance::Desktop,
+            AccountType::Individual,
+            Universe::Public,
+        ),
+    );
 }
