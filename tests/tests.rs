@@ -155,6 +155,8 @@ fn test_serde() {
     assert_eq!(s, deserialized);
 
     let deserialized: SteamID = serde_json::from_str("\"STEAM_0:0:4491990\"").unwrap();
+    // Prevent rustfmt bug where it adds an extra comma even though assert_eq! is a macro
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     assert_eq!(
         deserialized,
         SteamID::new(
@@ -162,10 +164,11 @@ fn test_serde() {
             Instance::Desktop,
             AccountType::Individual,
             Universe::Public,
-        ),
+        )
     );
 
     let deserialized: SteamID = serde_json::from_str("\"[U:1:123]\"").unwrap();
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     assert_eq!(
         deserialized,
         SteamID::new(
@@ -173,6 +176,6 @@ fn test_serde() {
             Instance::Desktop,
             AccountType::Individual,
             Universe::Public,
-        ),
+        )
     );
 }
