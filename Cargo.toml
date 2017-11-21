@@ -1,6 +1,6 @@
 [package]
 name = "steamid-ng"
-version = "0.2.0"
+version = "0.3.0"
 authors = ["Moses Miller <Majora320@gmail.com>"]
 description = "An easy-to-use steamid type with functions to parse and render steam2 and steam3 IDs"
 repository = "https://github.com/Majora320/steamid-ng"
@@ -20,5 +20,5 @@ regex = "0.2.2"
 serde_json = "1.0.6"
 
 [badges]
-maintenance = { status = "passively-maintained" }
+maintenance = { status = "actively-developed" }
 travis-ci = { repository = "Majora320/steamid-ng", branch = "master" }

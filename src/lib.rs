@@ -38,13 +38,12 @@ extern crate serde;
 
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 use enum_primitive::FromPrimitive;
+use std::fmt::{self, Debug};
 use std::fmt::Formatter;
-use std::fmt::Display;
 use std::str::FromStr;
 use regex::Regex;
-use std::fmt;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Default, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
 
 impl SteamID {
@@ -288,11 +287,12 @@ impl<'de> Deserialize<'de> for SteamID {
     }
 }
 
-impl Display for SteamID {
+impl Debug for SteamID {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         write!(
             f,
-            "(ID: {}, Instance: {:?}, Type: {:?}, Universe: {:?})",
+            "SteamID({}) {{ID: {}, Instance: {:?}, Type: {:?}, Universe: {:?}}}",
+            self.0,
             self.account_id(),
             self.instance(),
             self.account_type(),
