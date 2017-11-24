@@ -54,7 +54,7 @@ impl SteamID {
 
     pub fn set_account_id(&mut self, account_id: u32) {
         self.0 &= 0xFFFFFFFF00000000;
-        self.0 |= account_id as u64;
+        self.0 |= u64::from(account_id);
     }
 
     pub fn instance(&self) -> Instance {
@@ -92,7 +92,7 @@ impl SteamID {
     ) -> Self {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         Self::from(
-            ((account_id   as u64) << 0)  | ((instance as u64) << 32) |
+            u64::from(account_id)         | ((instance as u64) << 32) |
             ((account_type as u64) << 52) | ((universe as u64) << 56),
         )
     }
@@ -118,14 +118,14 @@ impl SteamID {
                 Regex::new(r"^STEAM_([0-4]):([0-1]):([0-9]{1,10})$").unwrap();
         }
 
-        let groups = STEAM2_REGEX.captures(steam2).ok_or(Self::err())?;
+        let groups = STEAM2_REGEX.captures(steam2).ok_or_else(Self::err)?;
 
         let mut universe: Universe = Universe::from_u64(
-            groups.get(1).ok_or(Self::err())?.as_str().parse().unwrap(),
-        ).ok_or(Self::err())?;
-        let auth_server: u32 = groups.get(2).ok_or(Self::err())?.as_str().parse().unwrap();
+            groups.get(1).ok_or_else(Self::err)?.as_str().parse().unwrap(),
+        ).ok_or_else(Self::err)?;
+        let auth_server: u32 = groups.get(2).ok_or_else(Self::err)?.as_str().parse().unwrap();
         #[cfg_attr(rustfmt, rustfmt_skip)]
-        let account_id: u32 = groups.get(3).ok_or(Self::err())?.as_str().parse().unwrap();
+        let account_id: u32 = groups.get(3).ok_or_else(Self::err)?.as_str().parse().unwrap();
         let account_id = account_id << 1 | auth_server;
 
         // Apparently, games before orange box used to display as 0 incorrectly
@@ -178,20 +178,20 @@ impl SteamID {
                 Regex::new(r"^\[([AGMPCgcLTIUai]):([0-4]):([0-9]{1,10})(:([0-9]+))?\]$").unwrap();
         }
 
-        let groups = STEAM3_REGEX.captures(steam3).ok_or(Self::err())?;
+        let groups = STEAM3_REGEX.captures(steam3).ok_or_else(Self::err)?;
 
         let type_char = groups
             .get(1)
-            .ok_or(Self::err())?
+            .ok_or_else(Self::err)?
             .as_str()
             .chars()
             .next()
             .unwrap();
         let (account_type, flag) = char_to_account_type(type_char);
         let universe = Universe::from_u64(
-            groups.get(2).ok_or(Self::err())?.as_str().parse().unwrap(),
-        ).ok_or(Self::err())?;
-        let account_id = groups.get(3).ok_or(Self::err())?.as_str().parse().unwrap();
+            groups.get(2).ok_or_else(Self::err)?.as_str().parse().unwrap(),
+        ).ok_or_else(Self::err)?;
+        let account_id = groups.get(3).ok_or_else(Self::err)?.as_str().parse().unwrap();
 
         let mut instance: Option<Instance> = groups.get(5).map(|g| {
             Instance::from_u64(g.as_str().parse().unwrap()).unwrap_or(Instance::Invalid)
@@ -209,7 +209,7 @@ impl SteamID {
 
         Ok(Self::new(
             account_id,
-            instance.ok_or(Self::err())?,
+            instance.ok_or_else(Self::err)?,
             account_type,
             universe,
         ))
@@ -234,7 +234,7 @@ impl From<SteamID> for u64 {
 impl From<SteamID> for String {
     /// Returns a Steam3 representation of the SteamID
     fn from(s: SteamID) -> Self {
-        return s.steam3();
+        s.steam3()
     }
 }
 
@@ -346,7 +346,6 @@ pub fn account_type_to_char(account_type: AccountType, instance: Instance) -> ch
 /// should set the instance of the underlying SteamID to this value.
 pub fn char_to_account_type(c: char) -> (AccountType, Option<Instance>) {
     match c {
-        'I' | 'i' => (AccountType::Invalid, None),
         'U' => (AccountType::Individual, None),
         'M' => (AccountType::Multiseat, None),
         'G' => (AccountType::GameServer, None),
@@ -361,7 +360,7 @@ pub fn char_to_account_type(c: char) -> (AccountType, Option<Instance>) {
 
         'a' => (AccountType::AnonUser, None),
 
-        _ => (AccountType::Invalid, None),
+        'I' | 'i' | _ => (AccountType::Invalid, None),
     }
 }
 
