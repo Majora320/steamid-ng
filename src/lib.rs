@@ -283,7 +283,7 @@ impl<'de> Deserialize<'de> for SteamID {
     where
         D: Deserializer<'de>,
     {
-        deserializer.deserialize_str(SteamIDVisitor)
+        deserializer.deserialize_any(SteamIDVisitor)
     }
 }
 
