@@ -20,5 +20,5 @@ regex = "1.1.9"
 serde_json = "1.0.40"
 
 [badges]
-maintenance = { status = "passively-mantained" }
+maintenance = { status = "passively-maintained" }
 travis-ci = { repository = "Majora320/steamid-ng", branch = "master" }
