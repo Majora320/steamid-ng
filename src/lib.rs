@@ -38,10 +38,11 @@ extern crate serde;
 
 use serde::de::{self, Visitor, Deserialize, Deserializer};
 use enum_primitive::FromPrimitive;
-use std::fmt::{self, Debug};
+use std::fmt::{self, Debug, Display};
 use std::fmt::Formatter;
 use std::str::FromStr;
 use regex::Regex;
+use std::error::Error;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
@@ -218,6 +219,14 @@ impl SteamID {
 
 #[derive(Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Default)]
 pub struct SteamIDParseError {}
+
+impl Error for SteamIDParseError {}
+
+impl Display for SteamIDParseError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Malformed SteamID")
+    }
+}
 
 impl From<u64> for SteamID {
     fn from(s: u64) -> Self {
