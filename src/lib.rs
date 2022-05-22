@@ -36,13 +36,15 @@ extern crate lazy_static;
 extern crate regex;
 extern crate serde;
 
+use std::{
+    error::Error,
+    fmt::{self, Debug, Display, Formatter},
+    str::FromStr,
+};
+
 use enum_primitive::FromPrimitive;
 use regex::Regex;
 use serde::de::{self, Deserialize, Deserializer, Visitor};
-use std::error::Error;
-use std::fmt::Formatter;
-use std::fmt::{self, Debug, Display};
-use std::str::FromStr;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
