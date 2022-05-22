@@ -36,13 +36,13 @@ extern crate lazy_static;
 extern crate regex;
 extern crate serde;
 
-use serde::de::{self, Visitor, Deserialize, Deserializer};
 use enum_primitive::FromPrimitive;
-use std::fmt::{self, Debug, Display};
-use std::fmt::Formatter;
-use std::str::FromStr;
 use regex::Regex;
+use serde::de::{self, Deserialize, Deserializer, Visitor};
 use std::error::Error;
+use std::fmt::Formatter;
+use std::fmt::{self, Debug, Display};
+use std::str::FromStr;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
@@ -122,9 +122,20 @@ impl SteamID {
         let groups = STEAM2_REGEX.captures(steam2).ok_or_else(Self::err)?;
 
         let mut universe: Universe = Universe::from_u64(
-            groups.get(1).ok_or_else(Self::err)?.as_str().parse().unwrap(),
-        ).ok_or_else(Self::err)?;
-        let auth_server: u32 = groups.get(2).ok_or_else(Self::err)?.as_str().parse().unwrap();
+            groups
+                .get(1)
+                .ok_or_else(Self::err)?
+                .as_str()
+                .parse()
+                .unwrap(),
+        )
+        .ok_or_else(Self::err)?;
+        let auth_server: u32 = groups
+            .get(2)
+            .ok_or_else(Self::err)?
+            .as_str()
+            .parse()
+            .unwrap();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let account_id: u32 = groups.get(3).ok_or_else(Self::err)?.as_str().parse().unwrap();
         let account_id = account_id << 1 | auth_server;
@@ -149,8 +160,7 @@ impl SteamID {
         let mut render_instance = false;
 
         match account_type {
-            AccountType::AnonGameServer |
-            AccountType::Multiseat => render_instance = true,
+            AccountType::AnonGameServer | AccountType::Multiseat => render_instance = true,
             AccountType::Individual => render_instance = instance != Instance::Desktop,
             _ => (),
         };
@@ -190,13 +200,24 @@ impl SteamID {
             .unwrap();
         let (account_type, flag) = char_to_account_type(type_char);
         let universe = Universe::from_u64(
-            groups.get(2).ok_or_else(Self::err)?.as_str().parse().unwrap(),
-        ).ok_or_else(Self::err)?;
-        let account_id = groups.get(3).ok_or_else(Self::err)?.as_str().parse().unwrap();
+            groups
+                .get(2)
+                .ok_or_else(Self::err)?
+                .as_str()
+                .parse()
+                .unwrap(),
+        )
+        .ok_or_else(Self::err)?;
+        let account_id = groups
+            .get(3)
+            .ok_or_else(Self::err)?
+            .as_str()
+            .parse()
+            .unwrap();
 
-        let mut instance: Option<Instance> = groups.get(5).map(|g| {
-            Instance::from_u64(g.as_str().parse().unwrap()).unwrap_or(Instance::Invalid)
-        });
+        let mut instance: Option<Instance> = groups
+            .get(5)
+            .map(|g| Instance::from_u64(g.as_str().parse().unwrap()).unwrap_or(Instance::Invalid));
 
         if instance.is_none() && type_char == 'U' {
             instance = Some(Instance::Desktop);
@@ -254,12 +275,10 @@ impl FromStr for SteamID {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.parse::<u64>() {
             Ok(parsed) => Ok(parsed.into()),
-            Result::Err(_) => {
-                match Self::from_steam2(s) {
-                    Ok(parsed) => Ok(parsed),
-                    Result::Err(_) => Self::from_steam3(s),
-                }
-            }
+            Result::Err(_) => match Self::from_steam2(s) {
+                Ok(parsed) => Ok(parsed),
+                Result::Err(_) => Self::from_steam3(s),
+            },
         }
     }
 }
@@ -323,7 +342,7 @@ enum_from_primitive!(
         Clan = 7,
         Chat = 8,
         P2PSuperSeeder = 9,
-        AnonUser = 10
+        AnonUser = 10,
     }
 );
 
@@ -380,7 +399,7 @@ enum_from_primitive!(
         Public = 1,
         Beta = 2,
         Internal = 3,
-        Dev = 4
+        Dev = 4,
     }
 );
 
@@ -394,8 +413,8 @@ enum_from_primitive!(
         // Made up magic constant
         Invalid = 666,
         // *Apparently*, All will by the only type used if any of these is set
-        FlagClan =     0x100000 >> 1,
-        FlagLobby =    0x100000 >> 2,
-        FlagMMSLobby = 0x100000 >> 3
+        FlagClan = 0x100000 >> 1,
+        FlagLobby = 0x100000 >> 2,
+        FlagMMSLobby = 0x100000 >> 3,
     }
 );
