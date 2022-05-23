@@ -1,5 +1,5 @@
-extern crate steamid_ng;
 extern crate serde_json;
+extern crate steamid_ng;
 use steamid_ng::*;
 
 #[test]
@@ -191,7 +191,8 @@ fn test_serde() {
         Instance::Desktop,
         AccountType::Individual,
         Universe::Public,
-    )).unwrap();
+    ))
+    .unwrap();
     assert_eq!(serialized, "76561197969249709");
 
     let serialized: String = serde_json::to_string(&SteamID::new(
@@ -199,7 +200,8 @@ fn test_serde() {
         Instance::Web,
         AccountType::AnonGameServer,
         Universe::Public,
-    )).unwrap();
+    ))
+    .unwrap();
     assert_eq!(serialized, "90072009727279227");
 }
 
