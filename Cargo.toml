@@ -8,7 +8,8 @@ readme = "README.md"
 keywords = ["steam", "id", "steamid", "parser"]
 categories = ["parser-implementations", "games"]
 license = "MIT"
-edition = "2018"
+edition = "2021"
+rust-version = "1.56"
 
 [dependencies]
 enum_primitive = "0.1.1"
