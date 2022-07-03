@@ -29,12 +29,6 @@
 
 #[macro_use]
 extern crate enum_primitive;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-extern crate serde;
 
 use std::{
     error::Error,
@@ -43,8 +37,12 @@ use std::{
 };
 
 use enum_primitive::FromPrimitive;
+use lazy_static::lazy_static;
 use regex::Regex;
-use serde::de::{self, Deserialize, Deserializer, Visitor};
+use serde::{
+    de::{self, Visitor},
+    Deserialize, Deserializer, Serialize,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
 pub struct SteamID(u64);
