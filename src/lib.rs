@@ -152,8 +152,8 @@ impl SteamID {
         }
         let mut account_id = u32::from(digit_from_ascii(bytes.next()?)?);
         for b in bytes {
-            account_id *= 10;
-            account_id += u32::from(digit_from_ascii(b)?);
+            account_id = account_id.checked_mul(10)?;
+            account_id = account_id.checked_add(u32::from(digit_from_ascii(b)?))?;
         }
         let account_id = account_id << 1 | auth_server;
 
