@@ -1,6 +1,3 @@
-use lazy_static::lazy_static;
-use proptest::{prelude::*, proptest};
-use regex::Regex;
 use steamid_ng::*;
 
 #[test]
@@ -214,36 +211,4 @@ fn test_debug_print() {
         debug,
         "SteamID(157626004137848889) {ID: 12345, Instance: Web, Type: GameServer, Universe: Beta}"
     );
-}
-
-proptest! {
-    // Runs reasonable fast, so use more cases
-    #![proptest_config(ProptestConfig {
-        cases: 1_000,
-        ..ProptestConfig::default()
-    })]
-
-    #[test]
-    fn from_steam2_regex(s in "\\PC*") {
-        lazy_static! {
-            static ref STEAM2_REGEX: Regex =
-                Regex::new(r"^STEAM_([0-4]):([0-1]):([0-9]{1,10})$").unwrap();
-        }
-
-        let is_valid_by_regex = STEAM2_REGEX.captures(&s).is_some();
-        let is_valid_by_manual = SteamID::from_steam2(&s).is_ok();
-        assert_eq!(is_valid_by_regex, is_valid_by_manual);
-    }
-
-    #[test]
-    fn from_steam3_regex(s in "\\PC*") {
-        lazy_static! {
-            static ref STEAM3_REGEX: Regex =
-                Regex::new(r"^\[([AGMPCgcLTIUai]):([0-4]):([0-9]{1,10})(:([0-9]+))?\]$").unwrap();
-        }
-
-        let is_valid_by_regex = STEAM3_REGEX.captures(&s).is_some();
-        let is_valid_by_manual = SteamID::from_steam2(&s).is_ok();
-        assert_eq!(is_valid_by_regex, is_valid_by_manual);
-    }
 }
