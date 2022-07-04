@@ -230,13 +230,7 @@ impl SteamID {
         }
 
         let mut account_id = u32::from(digit_from_ascii(bytes.next()?)?);
-        let mut num_digits = 1;
         while let Some(digit) = bytes.peek().copied().and_then(digit_from_ascii) {
-            num_digits += 1;
-            if num_digits > 10 {
-                return None;
-            }
-
             bytes.next().expect("Byte was peeked");
             account_id = account_id.checked_mul(10)?;
             account_id = account_id.checked_add(u32::from(digit))?;
