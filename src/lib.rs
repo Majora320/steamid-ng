@@ -27,6 +27,9 @@
 //!
 //! Keep in mind that the SteamID type does no validation.
 
+#[cfg(feature = "serde")]
+mod serde_support;
+
 #[macro_use]
 extern crate enum_primitive;
 
@@ -39,12 +42,9 @@ use std::{
 use enum_primitive::FromPrimitive;
 use lazy_static::lazy_static;
 use regex::Regex;
-use serde::{
-    de::{self, Visitor},
-    Deserialize, Deserializer, Serialize,
-};
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SteamID(u64);
 
 impl SteamID {
@@ -280,38 +280,6 @@ impl FromStr for SteamID {
                 Result::Err(_) => Self::from_steam3(s),
             },
         }
-    }
-}
-
-pub struct SteamIDVisitor;
-impl<'de> Visitor<'de> for SteamIDVisitor {
-    type Value = SteamID;
-
-    fn expecting(&self, formatter: &mut Formatter) -> fmt::Result {
-        formatter.write_str("a SteamID")
-    }
-
-    fn visit_str<E>(self, value: &str) -> Result<SteamID, E>
-    where
-        E: de::Error,
-    {
-        SteamID::from_str(value).map_err(|_| E::custom(format!("Invalid SteamID: {}", value)))
-    }
-
-    fn visit_u64<E>(self, value: u64) -> Result<SteamID, E>
-    where
-        E: de::Error,
-    {
-        Ok(value.into())
-    }
-}
-
-impl<'de> Deserialize<'de> for SteamID {
-    fn deserialize<D>(deserializer: D) -> Result<SteamID, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        deserializer.deserialize_any(SteamIDVisitor)
     }
 }
 
