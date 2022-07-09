@@ -40,12 +40,18 @@ use std::{
 };
 
 use enum_primitive::FromPrimitive;
-use lazy_static::lazy_static;
-use regex::Regex;
 
 #[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize))]
 pub struct SteamID(u64);
+
+fn digit_from_ascii(byte: u8) -> Option<u8> {
+    if (b'0'..=b'9').contains(&byte) {
+        Some(byte - b'0')
+    } else {
+        None
+    }
+}
 
 impl SteamID {
     pub fn account_id(&self) -> u32 {
@@ -108,45 +114,50 @@ impl SteamID {
         }
     }
 
-    /// Little ergonomics thing, to avoid typing `SteamIDParseError::default()` everywhere
-    fn err() -> SteamIDParseError {
-        Default::default()
+    pub fn from_steam2(steam2: &str) -> Result<Self, SteamIDParseError> {
+        Self::from_steam2_helper(steam2).ok_or(SteamIDParseError {})
     }
 
-    pub fn from_steam2(steam2: &str) -> Result<Self, SteamIDParseError> {
-        lazy_static! {
-            static ref STEAM2_REGEX: Regex =
-                Regex::new(r"^STEAM_([0-4]):([0-1]):([0-9]{1,10})$").unwrap();
-        }
+    // Parses id in the format of:
+    // ^STEAM_(universe:[0-4]):(auth_server:[0-1]):(account_id:[0-9]{1,10})$
+    fn from_steam2_helper(steam2: &str) -> Option<Self> {
+        let chunk = steam2.strip_prefix("STEAM_")?;
+        let mut bytes = chunk.bytes();
 
-        let groups = STEAM2_REGEX.captures(steam2).ok_or_else(Self::err)?;
-
-        let mut universe: Universe = Universe::from_u64(
-            groups
-                .get(1)
-                .ok_or_else(Self::err)?
-                .as_str()
-                .parse()
-                .unwrap(),
-        )
-        .ok_or_else(Self::err)?;
-        let auth_server: u32 = groups
-            .get(2)
-            .ok_or_else(Self::err)?
-            .as_str()
-            .parse()
-            .unwrap();
-        #[cfg_attr(rustfmt, rustfmt_skip)]
-        let account_id: u32 = groups.get(3).ok_or_else(Self::err)?.as_str().parse().unwrap();
-        let account_id = account_id << 1 | auth_server;
-
+        let mut universe: Universe = bytes
+            .next()
+            .and_then(|b| Universe::from_u64(u64::from(digit_from_ascii(b)?)))?;
         // Apparently, games before orange box used to display as 0 incorrectly
         // This is only an issue with steam2 ids
         if let Universe::Invalid = universe {
             universe = Universe::Public;
         }
 
-        Ok(Self::new(
+        if bytes.next() != Some(b':') {
+            return None;
+        }
+
+        let auth_server: u32 = match bytes.next()? {
+            b'0' => Some(0),
+            b'1' => Some(1),
+            _ => None,
+        }?;
+
+        if bytes.next() != Some(b':') {
+            return None;
+        }
+
+        if bytes.len() > 10 {
+            return None;
+        }
+        let mut account_id = u32::from(digit_from_ascii(bytes.next()?)?);
+        for b in bytes {
+            account_id = account_id.checked_mul(10)?;
+            account_id = account_id.checked_add(u32::from(digit_from_ascii(b)?))?;
+        }
+        let account_id = account_id << 1 | auth_server;
+
+        Some(Self::new(
             account_id,
             Instance::Desktop,
             AccountType::Individual,
@@ -184,57 +195,80 @@ impl SteamID {
     }
 
     pub fn from_steam3(steam3: &str) -> Result<Self, SteamIDParseError> {
-        lazy_static! {
-            static ref STEAM3_REGEX: Regex =
-                Regex::new(r"^\[([AGMPCgcLTIUai]):([0-4]):([0-9]{1,10})(:([0-9]+))?\]$").unwrap();
+        Self::from_steam3_helper(steam3).ok_or(SteamIDParseError {})
+    }
+
+    // Parses id in the format of:
+    // ^\[(type:[AGMPCgcLTIUai]):(universe:[0-4]):(account_id:[0-9]{1,10})(:(instance:[0-9]+))?\]$
+    fn from_steam3_helper(steam3: &str) -> Option<Self> {
+        let mut bytes = steam3.bytes().peekable();
+
+        if bytes.next() != Some(b'[') {
+            return None;
         }
 
-        let groups = STEAM3_REGEX.captures(steam3).ok_or_else(Self::err)?;
-
-        let type_char = groups
-            .get(1)
-            .ok_or_else(Self::err)?
-            .as_str()
-            .chars()
-            .next()
-            .unwrap();
+        let type_char = char::from(bytes.next()?);
         let (account_type, flag) = char_to_account_type(type_char);
-        let universe = Universe::from_u64(
-            groups
-                .get(2)
-                .ok_or_else(Self::err)?
-                .as_str()
-                .parse()
-                .unwrap(),
-        )
-        .ok_or_else(Self::err)?;
-        let account_id = groups
-            .get(3)
-            .ok_or_else(Self::err)?
-            .as_str()
-            .parse()
-            .unwrap();
-
-        let mut instance: Option<Instance> = groups
-            .get(5)
-            .map(|g| Instance::from_u64(g.as_str().parse().unwrap()).unwrap_or(Instance::Invalid));
-
-        if instance.is_none() && type_char == 'U' {
-            instance = Some(Instance::Desktop);
-        } else if type_char == 'T' || type_char == 'g' || instance.is_none() {
-            instance = Some(Instance::All);
+        if type_char != 'i' && type_char != 'I' && account_type == AccountType::Invalid {
+            return None;
         }
+
+        if bytes.next() != Some(b':') {
+            return None;
+        }
+
+        let universe = bytes.next().and_then(digit_from_ascii).and_then(|digit| {
+            if digit <= 4 {
+                Universe::from_u64(u64::from(digit))
+            } else {
+                None
+            }
+        })?;
+
+        if bytes.next() != Some(b':') {
+            return None;
+        }
+
+        let mut account_id = u32::from(digit_from_ascii(bytes.next()?)?);
+        while let Some(digit) = bytes.peek().copied().and_then(digit_from_ascii) {
+            bytes.next().expect("Byte was peeked");
+            account_id = account_id.checked_mul(10)?;
+            account_id = account_id.checked_add(u32::from(digit))?;
+        }
+
+        // Instance is optional. Parse it if it's there, but leave the closing ] intact
+        let mut instance = {
+            let maybe_instance = if bytes.peek() == Some(&b':') {
+                bytes.next().expect("Byte was peeked");
+
+                let mut acc = u64::from(digit_from_ascii(bytes.next()?)?);
+                while let Some(digit) = bytes.peek().copied().and_then(digit_from_ascii) {
+                    bytes.next().expect("Byte was peeked");
+                    acc = acc.checked_mul(10)?;
+                    acc = acc.checked_add(u64::from(digit))?;
+                }
+
+                Some(Instance::from_u64(acc).unwrap_or(Instance::Invalid))
+            } else {
+                None
+            };
+
+            match (maybe_instance, type_char) {
+                (None, 'U') => Instance::Desktop,
+                (None, _) | (_, 'T' | 'g') => Instance::All,
+                (Some(instance), _) => instance,
+            }
+        };
 
         if let Some(i) = flag {
-            instance = Some(i);
+            instance = i;
         }
 
-        Ok(Self::new(
-            account_id,
-            instance.ok_or_else(Self::err)?,
-            account_type,
-            universe,
-        ))
+        if bytes.next() != Some(b']') {
+            return None;
+        }
+
+        Some(Self::new(account_id, instance, account_type, universe))
     }
 }
 

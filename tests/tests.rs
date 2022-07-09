@@ -1,4 +1,3 @@
-extern crate steamid_ng;
 use steamid_ng::*;
 
 #[test]
@@ -154,4 +153,9 @@ fn test_debug_print() {
         debug,
         "SteamID(157626004137848889) {ID: 12345, Instance: Web, Type: GameServer, Universe: Beta}"
     );
+}
+
+#[test]
+fn steam2_overflowing_account_id() {
+    let _ = SteamID::from_steam2("STEAM_0:0:9999999999");
 }
