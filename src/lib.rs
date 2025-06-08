@@ -46,7 +46,7 @@ use serde::{
 pub struct SteamID(u64);
 
 fn digit_from_ascii(byte: u8) -> Option<u8> {
-    if (b'0'..=b'9').contains(&byte) {
+    if byte.is_ascii_digit() {
         Some(byte - b'0')
     } else {
         None
@@ -97,10 +97,11 @@ impl SteamID {
         account_type: AccountType,
         universe: Universe,
     ) -> Self {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
         Self::from(
-            u64::from(account_id)         | ((instance as u64) << 32) |
-            ((account_type as u64) << 52) | ((universe as u64) << 56),
+            u64::from(account_id)
+                | ((instance as u64) << 32)
+                | ((account_type as u64) << 52)
+                | ((universe as u64) << 56),
         )
     }
 
