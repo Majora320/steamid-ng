@@ -5,7 +5,7 @@
 //!
 //! ```
 //! # use steamid_ng::*;
-//! let x = SteamID::try_from(76561197960287930).unwrap();
+//! let x = SteamID::from_steam64(76561197960287930).unwrap();
 //! let y = SteamID::from_steam3("[U:1:22202]").unwrap();
 //! let z = SteamID::from_steam2("STEAM_1:0:11101").unwrap();
 //! assert_eq!(x, y);
