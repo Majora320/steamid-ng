@@ -27,6 +27,7 @@
 //! If an ID provided by an official Valve service fails to parse, that should be considered a bug
 //! in this library, and you should open an issue [on GitHub](https://github.com/Majora320/steamid-ng/issues).
 
+#[cfg(feature = "serde")]
 use serde::{
     Deserialize, Deserializer, Serialize,
     de::{self, Visitor},
@@ -56,7 +57,8 @@ fn digit_from_ascii(byte: u8) -> Option<u8> {
     }
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default, Serialize)]
+#[cfg_attr(feature = "serde", derive(Serialize))]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct SteamID(u64);
 
 impl SteamID {
@@ -346,7 +348,9 @@ impl FromStr for SteamID {
     }
 }
 
+#[cfg(feature = "serde")]
 struct SteamIDVisitor;
+#[cfg(feature = "serde")]
 impl<'de> Visitor<'de> for SteamIDVisitor {
     type Value = SteamID;
 
@@ -369,6 +373,7 @@ impl<'de> Visitor<'de> for SteamIDVisitor {
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de> Deserialize<'de> for SteamID {
     fn deserialize<D>(deserializer: D) -> Result<SteamID, D::Error>
     where
