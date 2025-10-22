@@ -58,7 +58,7 @@ fn digit_from_ascii(byte: u8) -> Option<u8> {
 }
 
 #[cfg_attr(feature = "serde", derive(Serialize))]
-#[derive(Clone, Copy, PartialEq, Eq, Hash, Default)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash)]
 pub struct SteamID(u64);
 
 impl SteamID {
