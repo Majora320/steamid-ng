@@ -408,7 +408,7 @@ pub enum AccountType {
     ContentServer = 6,
     Clan = 7,
     Chat = 8,
-    P2PSuperSeeder = 9,
+    ConsoleUser = 9,
     AnonUser = 10,
 }
 
@@ -425,7 +425,7 @@ impl TryFrom<u8> for AccountType {
             6 => Ok(AccountType::ContentServer),
             7 => Ok(AccountType::Clan),
             8 => Ok(AccountType::Chat),
-            9 => Ok(AccountType::P2PSuperSeeder),
+            9 => Ok(AccountType::ConsoleUser),
             10 => Ok(AccountType::AnonUser),
             _ => Err(SteamIDParseError),
         }
@@ -447,8 +447,8 @@ pub fn account_type_to_char(account_type: AccountType, flags: InstanceFlags) -> 
             InstanceFlags::Lobby => 'L',
             _ => 'T',
         },
+        AccountType::ConsoleUser => 'U',
         AccountType::AnonUser => 'a',
-        AccountType::P2PSuperSeeder => 'i', // Invalid (?)
     }
 }
 
