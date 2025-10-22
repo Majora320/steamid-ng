@@ -10,7 +10,7 @@ fn test_manual_construction() {
     );
 
     assert_eq!(s.account_id(), 1234);
-    assert_eq!(s.instance().instance_type(), InstanceType::Console);
+    assert_eq!(s.instance().instance_type(), Some(InstanceType::Console));
     assert_eq!(s.account_type(), AccountType::Chat);
     assert_eq!(s.universe(), Universe::Beta);
 
@@ -259,4 +259,9 @@ fn test_debug_print() {
 #[test]
 fn test_steam2_overflowing_account_id() {
     assert_eq!(SteamID::from_steam2("STEAM_0:0:9999999999").unwrap_err(), SteamIDParseError::default());
+}
+
+#[test]
+fn test_steam64_anonymous_id() {
+    SteamID::from_steam64(0x01a0b93593934ce1).unwrap();
 }

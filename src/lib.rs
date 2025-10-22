@@ -16,7 +16,7 @@
 //! assert_eq!(x.steam3(), "[U:1:22202]");
 //!
 //! assert_eq!(x.account_id(), 22202);
-//! assert_eq!(x.instance().instance_type(), InstanceType::Desktop);
+//! assert_eq!(x.instance().instance_type(), Some(InstanceType::Desktop));
 //! assert_eq!(x.account_type(), AccountType::Individual);
 //! assert_eq!(x.universe(), Universe::Public);
 //! // the SteamID type also has `set_{account_id, instance, account_type, universe}` methods,
@@ -86,7 +86,7 @@ impl SteamID {
     }
 
     pub fn instance(&self) -> Instance {
-        Instance::try_from(((self.0 >> 32) & 0xFFFFF) as u32).expect("Instance should be valid")
+        Instance(((self.0 >> 32) & 0xFFFFF) as u32)
     }
 
     pub fn set_instance(&mut self, instance: Instance) {
@@ -207,7 +207,7 @@ impl SteamID {
 
         match account_type {
             AccountType::AnonGameServer | AccountType::Multiseat => render_instance = true,
-            AccountType::Individual => render_instance = instance_type != InstanceType::Desktop,
+            AccountType::Individual => render_instance = instance_type != Some(InstanceType::Desktop),
             _ => (),
         };
 
@@ -316,7 +316,6 @@ impl TryFrom<u64> for SteamID {
     type Error = SteamIDParseError;
 
     fn try_from(value: u64) -> Result<Self, Self::Error> {
-        Instance::try_from((value >> 32 & 0xFFFFF) as u32)?;
         AccountType::try_from((value >> 52 & 0xF) as u8)?;
         Universe::try_from((value >> 56 & 0xFF) as u8)?;
 
@@ -432,7 +431,7 @@ impl TryFrom<u8> for AccountType {
     }
 }
 
-pub fn account_type_to_char(account_type: AccountType, flags: InstanceFlags) -> char {
+pub fn account_type_to_char(account_type: AccountType, flags: Option<InstanceFlags>) -> char {
     match account_type {
         AccountType::Invalid => 'I',
         AccountType::Individual => 'U',
@@ -443,8 +442,8 @@ pub fn account_type_to_char(account_type: AccountType, flags: InstanceFlags) -> 
         AccountType::ContentServer => 'C',
         AccountType::Clan => 'g',
         AccountType::Chat => match flags {
-            InstanceFlags::Clan => 'c',
-            InstanceFlags::Lobby => 'L',
+            Some(InstanceFlags::Clan) => 'c',
+            Some(InstanceFlags::Lobby) => 'L',
             _ => 'T',
         },
         AccountType::ConsoleUser => 'U',
@@ -496,20 +495,20 @@ impl TryFrom<u8> for Universe {
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Hash)]
-pub struct Instance(u32);
+pub struct Instance(pub u32);
 
 impl Instance {
     pub fn new(instance_type: InstanceType, flags: InstanceFlags) -> Self {
         Instance(instance_type as u32 | (flags as u32) << 12)
     }
 
-    pub fn instance_type(&self) -> InstanceType {
+    pub fn instance_type(&self) -> Option<InstanceType> {
         match self.0 & 0xFFF {
-            0 => InstanceType::All,
-            1 => InstanceType::Desktop,
-            2 => InstanceType::Console,
-            4 => InstanceType::Web,
-            _ => unreachable!(),
+            0 => Some(InstanceType::All),
+            1 => Some(InstanceType::Desktop),
+            2 => Some(InstanceType::Console),
+            4 => Some(InstanceType::Web),
+            _ => None,
         }
     }
 
@@ -518,13 +517,13 @@ impl Instance {
         self.0 |= instance_type as u32;
     }
 
-    pub fn flags(&self) -> InstanceFlags {
+    pub fn flags(&self) -> Option<InstanceFlags> {
         match self.0 >> 12 {
-            0 => InstanceFlags::None,
-            0b1000_0000 => InstanceFlags::Clan,
-            0b0100_0000 => InstanceFlags::Lobby,
-            0b0010_0000 => InstanceFlags::MMSLobby,
-            _ => unreachable!(),
+            0 => Some(InstanceFlags::None),
+            0b1000_0000 => Some(InstanceFlags::Clan),
+            0b0100_0000 => Some(InstanceFlags::Lobby),
+            0b0010_0000 => Some(InstanceFlags::MMSLobby),
+            _ => None,
         }
     }
 
@@ -536,21 +535,16 @@ impl Instance {
 
 impl Debug for Instance {
     fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{{Type: {:?}, Flags: {:?}}}",
-            self.instance_type(),
-            self.flags()
-        )
-    }
-}
-
-impl TryFrom<u32> for Instance {
-    type Error = SteamIDParseError;
-    fn try_from(value: u32) -> Result<Self, Self::Error> {
-        InstanceType::try_from(value & 0xFFF)?;
-        InstanceFlags::try_from((value >> 12) as u8)?;
-        Ok(Instance(value))
+        if let Some(instance_type) = self.instance_type() && let Some(flags) = self.flags() {
+            write!(
+                f,
+                "{{Type: {:?}, Flags: {:?}}}",
+                instance_type,
+                flags
+            )
+        } else {
+            write!(f, "{}", self.0)
+        }
     }
 }
 
