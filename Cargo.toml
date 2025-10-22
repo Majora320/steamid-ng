@@ -11,7 +11,7 @@ license = "MIT"
 edition = "2024"
 
 [dependencies]
-serde = { version = "1.0.219", features = ["derive"], optional = true }
+serde = { version = "1.0.228", features = ["derive"], optional = true }
 
 [dev-dependencies]
-serde_json = { version = "1.0.140" }
+serde_json = { version = "1.0.145" }
