@@ -257,6 +257,6 @@ fn test_debug_print() {
 }
 
 #[test]
-fn steam2_overflowing_account_id() {
-    let _ = SteamID::from_steam2("STEAM_0:0:9999999999");
+fn test_steam2_overflowing_account_id() {
+    assert_eq!(SteamID::from_steam2("STEAM_0:0:9999999999").unwrap_err(), SteamIDParseError::default());
 }
