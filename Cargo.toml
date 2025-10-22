@@ -1,6 +1,6 @@
 [package]
 name = "steamid-ng"
-version = "2.0.0"
+version = "3.0.0"
 authors = ["Moses Miller <moses@memiller.net>"]
 description = "An easy-to-use SteamID type with functions to parse and render steam2 and steam3 IDs"
 repository = "https://github.com/Majora320/steamid-ng"
